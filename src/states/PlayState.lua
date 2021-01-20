@@ -160,8 +160,9 @@ function PlayState:update(dt)
 
                 self.board.tiles[newTile.gridY][newTile.gridX] = newTile
                 
+                ---if the move will come out a match
+                --- if doesn't match the tile won't move
                 if not self.board:calculateMatches() then
-                    --debug print("Not a matching move")
                     local tempX = newTile.gridX
                     local tempY = newTile.gridY
 
