@@ -73,10 +73,8 @@ function PlayState:enter(params)
 
     -- grab score from params if it was passed
     self.score = params.score or 0
-        
-
     -- score we have to reach to get to the next level
-    self.scoreGoal = 200--self.level * 1.25 * 1000
+    self.scoreGoal = (self.level + math.floor(self.level/3))* 1.25 * 1000 
 end
 
 function PlayState:update(dt)
@@ -237,6 +235,7 @@ end
 function PlayState:calculateMatches()
     self.highlightedTile = nil
 
+
     -- if we have any matches, remove them and tween the falling blocks that result
     local matches = self.board:calculateMatches()
     
@@ -246,7 +245,8 @@ function PlayState:calculateMatches()
 
         -- add score for each match
         for k, match in pairs(matches) do
-            self.score = self.score + #match * 50
+            self.score = self.score + #match * 25 * self.board:calculateVarietyMatches()
+            
             self.timer = self.timer + #match
         end
 

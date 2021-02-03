@@ -41,10 +41,7 @@ function Board:initializeTiles()
 
         -- create a new tile at X,Y with a random color and variety
         for tileX = 1, 8 do
-            table.insert(self.tiles[tileY], Tile(tileX, tileY, self.tileColor[math.random(self.colorRandom)], math.random(self.pattern)))
-
-            
-            
+            table.insert(self.tiles[tileY], Tile(tileX, tileY, self.tileColor[math.random(self.colorRandom)], math.random(self.pattern)))            
         end
     end
 
@@ -66,6 +63,7 @@ function Board:calculateMatches()
 
     -- how many of the same color blocks in a row we've found
     local matchNum = 1
+
 
     -- horizontal matches first
     for y = 1, 8 do
@@ -97,6 +95,7 @@ function Board:calculateMatches()
 
                     -- add this match to our total matches table
                     table.insert(matches, match)
+
                 end
 
                 matchNum = 1
@@ -352,6 +351,140 @@ function Board:setColor()
 
 
     return tileColor
+
+
+end
+
+
+
+function Board:calculateVarietyMatches()
+    -- how many of the same color blocks in a row we've found
+    local matchNum = 1
+
+    -- table where all variety value will be placed based from all matches
+    local trackVariety = {}
+
+    -- horizontal matches first
+    for y = 1, 8 do
+        local colorToMatch = self.tiles[y][1].color
+
+        matchNum = 1
+        
+        -- every horizontal tile
+        for x = 2, 8 do
+            
+            -- if this is the same color as the one we're trying to match...
+            if self.tiles[y][x].color == colorToMatch then
+                matchNum = matchNum + 1
+            else
+                -- set this as the new color we want to watch for
+                colorToMatch = self.tiles[y][x].color
+
+                -- if we have a match of 3 or more up to now, add it to our matches table
+                if matchNum >= 3 then
+
+                    -- go backwards from here by matchNum
+                    for x2 = x - 1, x - matchNum, -1 do
+                        table.insert(trackVariety, self.tiles[y][x2].variety)
+                    end
+
+                end
+
+                matchNum = 1
+
+                -- don't need to check last two if they won't be in a match
+                if x >= 7 then
+                    break
+                end
+            end
+        end
+
+        -- account for the last row ending with a match
+        if matchNum >= 3 then
+            
+            -- go backwards from end of last row by matchNum
+            for x = 8, 8 - matchNum + 1, -1 do
+                table.insert(trackVariety, self.tiles[y][x].variety)
+            end
+            
+        end
+    end
+
+    -- vertical matches
+    for x = 1, 8 do
+        local colorToMatch = self.tiles[1][x].color
+
+        matchNum = 1
+
+        -- every vertical tile
+        for y = 2, 8 do
+            if self.tiles[y][x].color == colorToMatch then
+                matchNum = matchNum + 1
+            else
+                colorToMatch = self.tiles[y][x].color
+
+                if matchNum >= 3 then
+
+                    for y2 = y - 1, y - matchNum, -1 do
+                        table.insert(trackVariety, self.tiles[y2][x].variety)
+                    end
+                end
+
+                matchNum = 1
+
+                -- don't need to check last two if they won't be in a match
+                if y >= 7 then
+                    break
+                end
+            end
+        end
+
+        -- account for the last column ending with a match
+        if matchNum >= 3 then
+            
+            -- go backwards from end of last row by matchNum
+            for y = 8, 8 - matchNum + 1, -1 do
+                table.insert(trackVariety, self.tiles[y][x].variety)
+            end
+
+        end
+    end
+
+    -- table for placing equivalent value of score multiplier from score
+    local scoresEq = {}
+
+    for k, variety in pairs(trackVariety) do
+        local scoreMultiplier = 0
+        -- score multiplier equivalent of each variety
+        if variety == 1 then
+            scoreMultiplier = 0.5
+        elseif variety == 2 then
+            scoreMultiplier = 1
+        elseif variety == 3 then
+            scoreMultiplier = 1.5
+        elseif variety == 4 then
+            scoreMultiplier = 2
+        elseif variety == 5 then
+            scoreMultiplier = 2.50
+        else
+            scoreMultiplier = 2.75
+        end
+
+        table.insert(scoresEq, scoreMultiplier)
+    end
+
+
+    -- code for adding all multipliers 
+    local temp = 0
+
+    for k, multiplier in pairs(scoresEq) do
+        temp = temp + multiplier 
+        
+    end
+
+    -- we use math.floor here instead of the actual score in playstate
+    -- in order to keep a uniform clean look at the score
+    return math.floor(temp)
 
 
 end

@@ -32,6 +32,9 @@ function BeginGameState:enter(def)
     -- grab level # from the def we're passed
     self.level = def.level
 
+    -- gets score to be totaled in the game over screen
+    self.score = def.score or 0
+
 
     -- passes in color so it adds by 1 every beginning of a level
     self.color = (def.color or 5) + 1
@@ -82,6 +85,7 @@ function BeginGameState:enter(def)
                 :finish(function()
                     gStateMachine:change('play', {
                         level = self.level,
+                        score = self.score,
                         board = self.board,
                         color = self.color,
                         pattern = self.pattern
