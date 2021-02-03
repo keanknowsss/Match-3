@@ -13,11 +13,12 @@
 
 Board = Class{}
 
-function Board:init(x, y, level, color, pattern)
+function Board:init(x, y, color, pattern)
     self.x = x
     self.y = y
     self.matches = {}
-    self.level = level
+
+ 
 
     -- fetches color and pattern from callbacks
     self.colorRandom = color

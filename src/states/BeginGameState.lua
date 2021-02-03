@@ -50,7 +50,7 @@ function BeginGameState:enter(def)
     end
 
     -- additional parameters for Board class 
-    self.board = Board(VIRTUAL_WIDTH - 272, 16, self.level, self.color, self.pattern)
+    self.board = Board(VIRTUAL_WIDTH - 272, 16, self.color, self.pattern)
     --
     -- animate our white screen fade-in, then animate a drop-down with
     -- the level text
