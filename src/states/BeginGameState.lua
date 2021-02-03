@@ -20,10 +20,11 @@ function BeginGameState:init()
     self.transitionAlpha = 1
 
     -- spawn a board and place it toward the right
-    self.board = Board(VIRTUAL_WIDTH - 272, 16)
 
     -- start our level # label off-screen
     self.levelLabelY = -64
+
+
 end
 
 function BeginGameState:enter(def)
@@ -31,6 +32,25 @@ function BeginGameState:enter(def)
     -- grab level # from the def we're passed
     self.level = def.level
 
+
+    -- passes in color so it adds by 1 every beginning of a level
+    self.color = (def.color or 5) + 1
+
+
+    if self.color % 4 == 0 then
+        self.color = 5
+    end
+
+
+    -- passes in pattern so pattern changes/adds per four levels
+    self.pattern = def.pattern or 1
+
+    if self.level % 4 == 0 then
+        self.pattern = math.min(6, self.pattern + 1)
+    end
+
+    -- additional parameters for Board class 
+    self.board = Board(VIRTUAL_WIDTH - 272, 16, self.level, self.color, self.pattern)
     --
     -- animate our white screen fade-in, then animate a drop-down with
     -- the level text
@@ -58,10 +78,13 @@ function BeginGameState:enter(def)
                 })
                 
                 -- once that's complete, we're ready to play!
+                -- passes color and pattern so that it changes every specific levels
                 :finish(function()
                     gStateMachine:change('play', {
                         level = self.level,
-                        board = self.board
+                        board = self.board,
+                        color = self.color,
+                        pattern = self.pattern
                     })
                 end)
             end)
@@ -71,6 +94,7 @@ end
 
 function BeginGameState:update(dt)
     Timer.update(dt)
+
 end
 
 function BeginGameState:render()

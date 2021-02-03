@@ -39,6 +39,8 @@ function PlayState:init()
     self.score = 0
     self.timer = 60
 
+    self.paused = false
+
     -- set our Timer class to turn cursor highlight on and off
     Timer.every(0.5, function()
         self.rectHighlighted = not self.rectHighlighted
@@ -60,17 +62,44 @@ function PlayState:enter(params)
     -- grab level # from the params we're passed
     self.level = params.level
 
+    -- grabs pattern from the previous state and will be passed again later back to begin game state
+    self.pattern = params.pattern or 1
+
+    -- grabs color from the previous state and will be passed again later back to begin game state
+    self.color = params.color
+
     -- spawn a board and place it toward the right
-    self.board = params.board or Board(VIRTUAL_WIDTH - 272, 16)
+    self.board = params.board or Board(VIRTUAL_WIDTH - 272, 16, self.level, self.color, self.pattern)
 
     -- grab score from params if it was passed
     self.score = params.score or 0
+        
 
     -- score we have to reach to get to the next level
     self.scoreGoal = self.level * 1.25 * 1000
 end
 
 function PlayState:update(dt)
+    if love.paused then
+        if love.keyboard.wasPressed('p') then
+            love.paused = false
+            BACKGROUND_SCROLL_SPEED = 80
+            gSounds['pause']:stop()
+            gSounds['pause']:play()
+        else
+            return
+        end
+    else
+        if love.keyboard.wasPressed('p') then
+            love.paused = true
+            BACKGROUND_SCROLL_SPEED = 0
+            gSounds['pause']:stop()
+            gSounds['pause']:play()
+        end
+    end
+
+
+
     if love.keyboard.wasPressed('escape') then
         love.event.quit()
     end
@@ -101,7 +130,9 @@ function PlayState:update(dt)
         -- change to begin game state with new level (incremented)
         gStateMachine:change('begin-game', {
             level = self.level + 1,
-            score = self.score
+            score = self.score,
+            color = self.color,
+            pattern = self.pattern
         })
     end
 

@@ -13,10 +13,17 @@
 
 Board = Class{}
 
-function Board:init(x, y)
+function Board:init(x, y, level, color, pattern)
     self.x = x
     self.y = y
     self.matches = {}
+    self.level = level
+
+    -- fetches color and pattern from callbacks
+    self.colorRandom = color
+    self.tileColor = self:setColor()
+    self.pattern = pattern
+
 
     self:initializeTiles()
 end
@@ -24,15 +31,19 @@ end
 function Board:initializeTiles()
     self.tiles = {}
 
+
+
     for tileY = 1, 8 do
         
         -- empty table that will serve as a new row
         table.insert(self.tiles, {})
 
+        -- create a new tile at X,Y with a random color and variety
         for tileX = 1, 8 do
+            table.insert(self.tiles[tileY], Tile(tileX, tileY, self.tileColor[math.random(self.colorRandom)], math.random(self.pattern)))
+
             
-            -- create a new tile at X,Y with a random color and variety
-            table.insert(self.tiles[tileY], Tile(tileX, tileY, math.random(18), math.random(6)))
+            
         end
     end
 
@@ -240,7 +251,7 @@ function Board:getFallingTiles()
             if not tile then
 
                 -- new tile with random color and variety
-                local tile = Tile(x, y, math.random(18), math.random(6))
+                local tile = Tile(x, y, self.tileColor[math.random(self.colorRandom)], math.random(self.pattern))
                 tile.y = -32
                 self.tiles[y][x] = tile
 
@@ -261,4 +272,85 @@ function Board:render()
             self.tiles[y][x]:render(self.x, self.y)
         end
     end
+end
+
+
+
+function Board:setColor()
+    
+    local tileColor = {}
+
+ 
+
+    -- choosing a particular tiles to be displayed
+    -- colors that look similar wouldnt be on the same board
+    
+
+   -- variable to keep either of the color 
+    local chooseColor = 0
+
+    -- choose from 1st color or 3rd color
+    chooseColor = math.random(2) == 1 and 1 or 3
+    table.insert(tileColor, chooseColor)
+
+    -- choose from 2nd color or 4th color
+    chooseColor = math.random(2) == 1 and 2 or 4
+    table.insert(tileColor, chooseColor)
+
+    -- choose from 5th or 7th or 9th Color
+    chooseColor = math.random(3)
+    if chooseColor == 1 then
+        chooseColor = 5
+    elseif chooseColor == 2 then
+        chooseColor = 7
+    else
+        chooseColor = 9
+    end
+
+    table.insert(tileColor, chooseColor)
+
+
+    -- choose from 6th or 8th or 10th color
+    chooseColor = math.random(3)
+    if chooseColor == 1 then
+        chooseColor = 6
+    elseif chooseColor == 2 then
+        chooseColor = 8
+    else
+        chooseColor = 10
+    end
+
+    table.insert(tileColor, chooseColor)
+
+
+    -- choose from 11th or 13th color
+    chooseColor = math.random(2) == 1 and 11 or 13
+    table.insert(tileColor, chooseColor)
+
+
+    -- since 12th color is unique, it is always in the table
+    table.insert(tileColor, 12)
+
+
+    -- choose from 14th or 16th or 18th color
+    chooseColor = math.random(3)
+    if chooseColor == 1 then
+        chooseColor = 14
+    elseif chooseColor == 2 then
+        chooseColor = 16
+    else
+        chooseColor = 18
+    end
+
+    table.insert(tileColor, chooseColor)
+
+
+    -- of 15th and 17th color
+    chooseColor = math.random(2) == 1 and 15 or 17
+    table.insert(tileColor, chooseColor)
+
+
+    return tileColor
+
+
 end
