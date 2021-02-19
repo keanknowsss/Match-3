@@ -37,18 +37,18 @@ function BeginGameState:enter(def)
 
 
     -- passes in color so it adds by 1 every beginning of a level
-    self.color = (def.color or 5) + 1
+    self.color = def.color or 5
 
 
-    if self.color % 4 == 0 then
+    --resets the number of color when it exeeds the maximum number of colors
+    if self.color > 8 then
         self.color = 5
     end
-
 
     -- passes in pattern so pattern changes/adds per four levels
     self.pattern = def.pattern or 1
 
-    if self.level % 4 == 0 then
+    if self.level % 5 == 0 then
         self.pattern = math.min(6, self.pattern + 1)
     end
 

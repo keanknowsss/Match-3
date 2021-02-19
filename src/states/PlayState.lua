@@ -74,8 +74,11 @@ function PlayState:enter(params)
     -- grab score from params if it was passed
     self.score = params.score or 0
     -- score we have to reach to get to the next level
-    self.scoreGoal = (self.level + math.floor(self.level/3))* 1.25 * 1000 
+    self.scoreGoal = (self.level + math.floor(self.level/5))* 1.25 * 1000 
+
+    self.board:availableMatch()
 end
+
 
 function PlayState:update(dt)
     if love.paused then
@@ -128,8 +131,8 @@ function PlayState:update(dt)
         -- change to begin game state with new level (incremented)
         gStateMachine:change('begin-game', {
             level = self.level + 1,
-            score = self.score,
-            color = self.color,
+            score = self.scoreGoal,
+            color = self.color + 1,
             pattern = self.pattern
         })
     end
@@ -236,6 +239,7 @@ function PlayState:calculateMatches()
     self.highlightedTile = nil
 
 
+
     -- if we have any matches, remove them and tween the falling blocks that result
     local matches = self.board:calculateMatches()
     
@@ -245,8 +249,7 @@ function PlayState:calculateMatches()
 
         -- add score for each match
         for k, match in pairs(matches) do
-            self.score = self.score + #match * 25 * self.board:calculateVarietyMatches()
-            
+            self.score = self.score + #match * 20 + self.board:calculateVarietyMatches()
             self.timer = self.timer + #match
         end
 
@@ -263,17 +266,47 @@ function PlayState:calculateMatches()
             -- recursively call function in case new matches have been created
             -- as a result of falling blocks once new blocks have finished falling
             self:calculateMatches()
+            self:resetBoard()
         end)
     
     -- if no matches, we can continue playing
     else
         self.canInput = true
     end
+
 end
+
+
+
+function PlayState:resetBoard()
+    if not self.board:availableMatch() then
+        Timer.after(1, function ()
+            self.canInput = false
+    
+    
+            for y = 1, 8 do
+                for x = 1, 8 do
+                    self.board.tiles[y][x] = nil
+    
+                end
+            end
+    
+            Timer.after(0.5, function ()
+                self.board:initializeTiles()
+                self.canInput = true  
+            end)
+          
+        end)
+    end
+end
+
+
 
 function PlayState:render()
     -- render board of tiles
-    self.board:render()
+    if self.board:availableMatch() then
+        self.board:render()        
+    end
 
     -- render highlighted tile if it exists
     if self.highlightedTile then

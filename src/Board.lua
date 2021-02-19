@@ -29,6 +29,7 @@ function Board:init(x, y, color, pattern)
     self:initializeTiles()
 end
 
+
 function Board:initializeTiles()
     self.tiles = {}
 
@@ -51,6 +52,21 @@ function Board:initializeTiles()
         -- a matchless board on start
         self:initializeTiles()
     end
+
+    -- creates a board with a potential match
+    if not self:availableMatch() then
+        self.tiles = {}
+        self:initializeTiles()
+    end
+
+    -- if the tileset are empty initialize a new one
+    while self:checkIsEmpty() do
+        self:initializeTiles()
+    end
+
+
+    return self.tiles
+
 end
 
 --[[
@@ -67,6 +83,9 @@ function Board:calculateMatches()
 
     -- horizontal matches first
     for y = 1, 8 do
+        if self:checkIsEmpty() then
+            return
+        end
         local colorToMatch = self.tiles[y][1].color
 
         matchNum = 1
@@ -266,11 +285,16 @@ function Board:getFallingTiles()
     return tweens
 end
 
+
+
 function Board:render()
-    for y = 1, #self.tiles do
-        for x = 1, #self.tiles[1] do
-            self.tiles[y][x]:render(self.x, self.y)
+    if self:availableMatch() then
+        for y = 1, #self.tiles do
+            for x = 1, #self.tiles[1] do
+                self.tiles[y][x]:render(self.x, self.y)
+            end
         end
+    
     end
 end
 
@@ -279,8 +303,6 @@ end
 function Board:setColor()
     
     local tileColor = {}
-
- 
 
     -- choosing a particular tiles to be displayed
     -- colors that look similar wouldnt be on the same board
@@ -382,12 +404,14 @@ function Board:calculateVarietyMatches()
 
                 -- if we have a match of 3 or more up to now, add it to our matches table
                 if matchNum >= 3 then
+                    local tracker = {}
 
                     -- go backwards from here by matchNum
                     for x2 = x - 1, x - matchNum, -1 do
-                        table.insert(trackVariety, self.tiles[y][x2].variety)
+                        table.insert(tracker, self.tiles[y][x2].variety)
                     end
-
+                   
+                    table.insert(trackVariety, tracker)
                 end
 
                 matchNum = 1
@@ -401,12 +425,13 @@ function Board:calculateVarietyMatches()
 
         -- account for the last row ending with a match
         if matchNum >= 3 then
-            
+            local tracker = {}
             -- go backwards from end of last row by matchNum
             for x = 8, 8 - matchNum + 1, -1 do
-                table.insert(trackVariety, self.tiles[y][x].variety)
+                table.insert(tracker, self.tiles[y][x].variety)
             end
             
+            table.insert(trackVariety, tracker)
         end
     end
 
@@ -424,10 +449,14 @@ function Board:calculateVarietyMatches()
                 colorToMatch = self.tiles[y][x].color
 
                 if matchNum >= 3 then
+                    local tracker = {}
 
                     for y2 = y - 1, y - matchNum, -1 do
-                        table.insert(trackVariety, self.tiles[y2][x].variety)
+                        table.insert(tracker, self.tiles[y2][x].variety)
                     end
+
+                    table.insert(trackVariety, tracker)
+
                 end
 
                 matchNum = 1
@@ -441,50 +470,321 @@ function Board:calculateVarietyMatches()
 
         -- account for the last column ending with a match
         if matchNum >= 3 then
-            
+            local tracker = {}
+
             -- go backwards from end of last row by matchNum
             for y = 8, 8 - matchNum + 1, -1 do
-                table.insert(trackVariety, self.tiles[y][x].variety)
+                table.insert(tracker, self.tiles[y][x].variety)
             end
 
+            table.insert(trackVariety, tracker)
+
         end
     end
 
-    -- table for placing equivalent value of score multiplier from score
+    -- compiles all the largest value per table in trackVariety
+    local patternCheck = {}
+
+    -- gets the largest patter/hierarchy and place on a new table
+    for k, trackVar in pairs(trackVariety) do
+        local holder = trackVar[1]
+        local largest = 0
+
+
+        for i = 2, #trackVar do
+
+            if holder > trackVar[i] then
+                largest = holder
+            else
+                largest = trackVar[i]
+            end
+        end
+
+        table.insert(patternCheck, largest)
+    end
+
+
     local scoresEq = {}
 
-    for k, variety in pairs(trackVariety) do
-        local scoreMultiplier = 0
-        -- score multiplier equivalent of each variety
-        if variety == 1 then
-            scoreMultiplier = 0.5
-        elseif variety == 2 then
-            scoreMultiplier = 1
-        elseif variety == 3 then
-            scoreMultiplier = 1.5
-        elseif variety == 4 then
-            scoreMultiplier = 2
-        elseif variety == 5 then
-            scoreMultiplier = 2.50
+    -- adding only bonusPoints per match
+    for k, pattern in pairs(patternCheck) do
+        local bonusPoints = 0
+        
+        if pattern == 1 then
+            bonusPoints = 20
+        elseif pattern == 2 then
+            bonusPoints = 80
+        elseif pattern == 3 then
+            bonusPoints = 120 
+        elseif pattern == 4 then
+            bonusPoints = 160
+        elseif pattern == 5 then
+            bonusPoints = 200
         else
-            scoreMultiplier = 2.75
+            bonusPoints = 250
         end
 
-        table.insert(scoresEq, scoreMultiplier)
+        table.insert(scoresEq, bonusPoints)
+    end
+
+    local addPoints = 0
+    for k, bonus in pairs(scoresEq) do
+        addPoints = addPoints + bonus
     end
 
 
-    -- code for adding all multipliers 
-    local temp = 0
+    return addPoints
+ 
 
-    for k, multiplier in pairs(scoresEq) do
-        temp = temp + multiplier 
+end
+
+
+
+
+-- artificially moves every single block to see if it creates a match
+-- else create a new board
+function Board:availableMatch()
+
+    local match = false
+
+    -- we only need to check if there are atleast one possible swap, so immediately return true if there is one
+
+    -- horizontal checking (left to right and right to left checking)
+    -- checks possible swap if a block is to be moved from left to right or right to left
+    for y = 1, 8 do
+        local tileChecker = self.tiles[y][1]
+        if tileChecker == nil then return end
+
+        -- horizontal left to right checker
+        -- checks possible swap if a block is to be moved from left to right
+        for x = 2, 8  do
+
+
+            -- checks if there are possible matches forming to the right
+            if x < 7 then
+                if tileChecker.color == self.tiles[y][x+1].color then
+                    if self.tiles[y][x+1].color == self.tiles[y][x+2].color then
+                        return true
+                    end
+                end
+            end
+
+            -- checks if there are possible matches form at top, and bottom of the possible swap
+            if y > 1 then
+                if tileChecker.color == self.tiles[y-1][x].color then
+                    if y < 8 then
+                        if self.tiles[y-1][x].color ==  self.tiles[y+1][x].color then
+                            return true
+                        end
+                    end
+                end
+            end
+
+
+            -- checks if there are possible match formed at the bottom of the current block
+            if y < 7 then 
+                if tileChecker.color == self.tiles[y+1][x].color then
+                    if self.tiles[y+1][x].color == self.tiles[y+2][x].color then
+                        return true
+                    end
+                end
+            end
+
+
+            -- checks if there are matches form at the top when the block is moved 
+            if y > 2 then
+                if tileChecker.color == self.tiles[y-1][x].color then
+                    if self.tiles[y-1][x].color == self.tiles[y-2][x].color then
+                        return true
+                    end
+                end
+            end
+
+
+            -- moves the checker tile to the current tile
+           tileChecker = self.tiles[y][x]
+
+        end
+
+
+        -- horizontal right to left checker
+        -- checks possible swap if a block is to be moved from right to left
+    if tileChecker == nil then return end
+        tileChecker = self.tiles[y][8]
+
+        for x = 7, 1, -1 do
+            -- checks if there are possible matches forming to the right
+            if x > 2 then
+                if tileChecker.color == self.tiles[y][x-1].color then
+                    if self.tiles[y][x+1].color == self.tiles[y][x-2].color then
+                        return true
+                    end
+                end
+            end
+
+            -- checks if there are possible matches form at top, and bottom of the possible swap
+            if y > 1 then
+                if tileChecker.color == self.tiles[y-1][x].color then
+                    if y < 8 then
+                        if self.tiles[y-1][x].color == self.tiles[y+1][x].color then
+                            return true
+                        end
+                    end
+                end
+            end
+
+
+            -- checks if there are possible match formed at the bottom of the current block
+            if y < 7 then 
+                if tileChecker.color == self.tiles[y+1][x].color then
+                    if self.tiles[y+1][x].color == self.tiles[y+2][x].color then
+                        return true
+                    end
+                end
+            end
+
+            -- checks if there are matches form at the top when the block is moved 
+            if y > 2 then
+                if tileChecker.color == self.tiles[y-1][x].color then
+                    if self.tiles[y-1][x].color == self.tiles[y-2][x].color then
+                        return true
+                    end
+                end
+            end
+
+
+            -- moves the checker tile to the current tile
+           tileChecker = self.tiles[y][x]
         
+        end
     end
 
-    -- we use math.floor here instead of the actual score in playstate
-    -- in order to keep a uniform clean look at the score
-    return math.floor(temp)
+
+    -- vertical checking (top to bottom and bottom to top checking)
+    -- checks possible swap if a block is to be moved from top to bottom and bottom to top
+    for x = 1, 8 do
+        local tileChecker = self.tiles[1][x]
+        if tileChecker == nil then return end
+
+        -- vertical top to bottom checker
+        -- checks possible swap if a block is to be moved from top to bottom
+        for y = 2, 8 do
+
+            -- checks if there are possible matches forming towards the bottom
+            if y < 7 then
+                if tileChecker.color == self.tiles[y+1][x].color then
+                    if self.tiles[y+1][x].color == self.tiles[y+2][x].color then
+                        return true
+                    end
+                end
+            end
+
+            -- checks if there are possible matches form at left, and right of the possible swap
+            if x > 1 then
+                if tileChecker.color == self.tiles[y][x-1].color then
+                    if x < 8 then
+                        if self.tiles[y][x-1].color ==  self.tiles[y][x+1].color then
+                            return true
+                        end
+                    end
+                end
+            end
 
 
+            -- checks if there are possible match formed at the bottom right of the current block
+            if x < 7 then 
+                if tileChecker.color == self.tiles[y][x+1].color then
+                    if self.tiles[y][x+1].color == self.tiles[y][x+2].color then
+                        return true
+                    end
+                end
+            end
+
+
+            -- -- checks if there are matches form at the bottom left when the block is moved 
+            if x > 2 then
+                if tileChecker.color == self.tiles[y][x-1].color then
+                    if self.tiles[y][x-1].color == self.tiles[y][x-2].color then
+                        return true
+                    end
+                end
+            end
+
+
+            -- moves the checker tile to the current tile
+           tileChecker = self.tiles[y][x]
+        end
+
+        
+
+        tileChecker = self.tiles[8][x]
+        if tileChecker == nil then return end
+
+        -- vertical bottom to top checker
+        -- checks possible swap if a block is to be moved from bottom to top
+        for y = 7, 1, -1 do
+
+            -- checks if there are possible matches forming towards the bottom
+            if y > 2 then
+                if tileChecker.color == self.tiles[y-1][x].color then
+                    if self.tiles[y-1][x].color == self.tiles[y-2][x].color then
+                        return true
+                    end
+                end
+            end
+
+            -- checks if there are possible matches formig at the top, and bottom of the possible swap
+            if x > 1 then
+                if tileChecker.color == self.tiles[y][x-1].color then
+                    if x < 8 then
+                        if self.tiles[y][x-1].color ==  self.tiles[y][x+1].color then
+                            return true
+                        end
+                    end
+                end
+            end
+
+
+            -- checks if there are possible match formed at the top right of the current block
+            if x < 7 then 
+                if tileChecker.color == self.tiles[y][x+1].color then
+                    if self.tiles[y][x+1].color == self.tiles[y][x+2].color then
+                        return true
+                    end
+                end
+            end
+
+
+            -- -- checks if there are matches form at the top left when the block is moved 
+            if x > 2 then
+                if tileChecker.color == self.tiles[y][x-1].color then
+                    if self.tiles[y][x-1].color == self.tiles[y][x-2].color then
+                        return true
+                    end
+                end
+            end
+
+
+            --gets the value of the current tile
+           tileChecker = self.tiles[y][x]
+        end
+
+    end
+
+
+    return false
+end
+
+
+
+function Board:checkIsEmpty()
+    for y = 1, 8, 1 do
+        for x = 1, 8, 1 do
+            if self.tiles then
+                return false
+            end
+        end
+    end
+
+    return true
 end
