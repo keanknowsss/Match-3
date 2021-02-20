@@ -53,7 +53,8 @@ gSounds = {
 
 gTextures = {
     ['main'] = love.graphics.newImage('graphics/match3.png'),
-    ['background'] = love.graphics.newImage('graphics/background.png')
+    ['background'] = love.graphics.newImage('graphics/background.png'),
+    ['spark'] = love.graphics.newImage('graphics/spark.png')
 }
 
 gFrames = {

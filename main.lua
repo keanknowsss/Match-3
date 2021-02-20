@@ -76,8 +76,10 @@ function love.load()
     -- keep track of scrolling our background on the X axis
     backgroundX = 0
 
+
     -- initialize input table
     love.keyboard.keysPressed = {}
+    love.mouse.buttonsPressed = {}
 end
 
 function love.resize(w, h)
@@ -98,8 +100,17 @@ function love.keyboard.wasPressed(key)
     end
 end
 
+
+function love.mousepressed(x, y, button)
+    love.mouse.buttonsPressed[button] = true 
+end
+
+
+function love.mouse.wasPressed(button)
+    return love.mouse.buttonsPressed[button]
+end
+
 function love.update(dt)
-    
     -- scroll background, used across all states
     backgroundX = backgroundX - BACKGROUND_SCROLL_SPEED * dt
     
@@ -111,6 +122,8 @@ function love.update(dt)
     gStateMachine:update(dt)
 
     love.keyboard.keysPressed = {}
+    love.mouse.buttonsPressed = {}
+
 end
 
 function love.draw()

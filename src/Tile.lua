@@ -13,8 +13,7 @@
 
 Tile = Class{}
 
-spark = love.graphics.newImage('graphics/spark.png')
-function Tile:init(x, y, color, variety)
+function Tile:init(x, y, color, variety, shine)
     
     -- board positions
     self.gridX = x
@@ -28,6 +27,12 @@ function Tile:init(x, y, color, variety)
     self.color = color
     self.variety = variety
     self.shine = shine
+
+    -- shine variables used for tweening animation
+    self.shineOpacity = 1
+    self.scaleX = 0.12
+    self.scaleY = 0.12
+    
 end
 
 function Tile:render(x, y)
@@ -41,7 +46,12 @@ function Tile:render(x, y)
     love.graphics.setColor(255, 255, 255, 255)
     love.graphics.draw(gTextures['main'], gFrames['tiles'][self.color][self.variety],
         self.x + x, self.y + y)
+    
+    -- render the shine for the blocks
     if self.shine then
-            love.graphics.draw(spark,self.x + x, self.y + y , 0, 0.025, 0.025)
+        love.graphics.setColor(1,1,1, self.shineOpacity)
+        love.graphics.draw(gTextures['spark'],self.x + x + 3, self.y + y + 3, 0, self.scaleX, self.scaleY)
     end
+    
+
 end

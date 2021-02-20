@@ -25,7 +25,6 @@ function Board:init(x, y, color, pattern)
     self.tileColor = self:setColor()
     self.pattern = pattern
 
-
     self:initializeTiles()
 end
 
@@ -42,10 +41,11 @@ function Board:initializeTiles()
 
         -- create a new tile at X,Y with a random color and variety
         for tileX = 1, 8 do
-            table.insert(self.tiles[tileY], Tile(tileX, tileY, self.tileColor[math.random(self.colorRandom)], math.random(self.pattern)))            
+            table.insert(self.tiles[tileY], Tile(tileX, tileY, self.tileColor[math.random(self.colorRandom)], math.random(self.pattern), self:createShine()))            
         end
     end
 
+    
     while self:calculateMatches() do
         
         -- recursively initialize if matches were returned so we always have
@@ -79,9 +79,8 @@ function Board:calculateMatches()
 
     -- how many of the same color blocks in a row we've found
     local matchNum = 1
-
-
     -- horizontal matches first
+
     for y = 1, 8 do
         if self:checkIsEmpty() then
             return
@@ -89,7 +88,6 @@ function Board:calculateMatches()
         local colorToMatch = self.tiles[y][1].color
 
         matchNum = 1
-        
         -- every horizontal tile
         for x = 2, 8 do
             
@@ -104,21 +102,26 @@ function Board:calculateMatches()
                 -- if we have a match of 3 or more up to now, add it to our matches table
                 if matchNum >= 3 then
                     local match = {}
-
                     -- go backwards from here by matchNum
+                    
                     for x2 = x - 1, x - matchNum, -1 do
-                        
-                        -- add each tile to the match that's in that match
-                        table.insert(match, self.tiles[y][x2])
+                        -- checks if there are shiny blocks within the matches
+                        -- if there are count the whole row as a match
+                        -- else only count the color matching tiles
+                        if self.tiles[y][x2].shine then
+                            for x3 = 1, 8 do
+                                table.insert(match,self.tiles[y][x3])
+                            end
+                        else
+                            table.insert(match, self.tiles[y][x2])
+                        end
                     end
 
                     -- add this match to our total matches table
                     table.insert(matches, match)
-
                 end
 
                 matchNum = 1
-
                 -- don't need to check last two if they won't be in a match
                 if x >= 7 then
                     break
@@ -132,12 +135,27 @@ function Board:calculateMatches()
             
             -- go backwards from end of last row by matchNum
             for x = 8, 8 - matchNum + 1, -1 do
+
+                -- checks if there are shiny blocks within the matches
+                -- if there are count the whole row as a match
+                -- else only count the color matching tiles
+                if self.tiles[y][x].shine then
+                    for x2 = 1, 8 do
+                        table.insert(match,self.tiles[y][x2])
+                    end
+                else
+                    table.insert(match, self.tiles[y][x])
+                end
+        
+
                 table.insert(match, self.tiles[y][x])
             end
-
+            
+            -- table.insert(shiny, isShiny)
             table.insert(matches, match)
         end
     end
+
 
     -- vertical matches
     for x = 1, 8 do
@@ -156,7 +174,16 @@ function Board:calculateMatches()
                     local match = {}
 
                     for y2 = y - 1, y - matchNum, -1 do
-                        table.insert(match, self.tiles[y2][x])
+                        -- checks if there are shiny blocks within the matches
+                        -- if there are count the whole column as a match
+                        -- else only count the color matching tiles
+                        if self.tiles[y2][x].shine then
+                            for y3 = 1, 8 do
+                                table.insert(match,self.tiles[y3][x])
+                            end
+                        else
+                            table.insert(match, self.tiles[y2][x])
+                        end
                     end
 
                     table.insert(matches, match)
@@ -177,7 +204,16 @@ function Board:calculateMatches()
             
             -- go backwards from end of last row by matchNum
             for y = 8, 8 - matchNum + 1, -1 do
-                table.insert(match, self.tiles[y][x])
+                -- checks if there are shiny blocks within the matches
+                -- if there are count the whole row as a match
+                -- else only count the color matching tiles
+                if self.tiles[y][x].shine then
+                    for y2 = 1, 8 do
+                        table.insert(match,self.tiles[y2][x])
+                    end
+                else
+                    table.insert(match, self.tiles[y][x])
+                end
             end
 
             table.insert(matches, match)
@@ -270,7 +306,7 @@ function Board:getFallingTiles()
             if not tile then
 
                 -- new tile with random color and variety
-                local tile = Tile(x, y, self.tileColor[math.random(self.colorRandom)], math.random(self.pattern))
+                local tile = Tile(x, y, self.tileColor[math.random(self.colorRandom)], math.random(self.pattern), self:createShine())
                 tile.y = -32
                 self.tiles[y][x] = tile
 
@@ -407,8 +443,17 @@ function Board:calculateVarietyMatches()
                     local tracker = {}
 
                     -- go backwards from here by matchNum
-                    for x2 = x - 1, x - matchNum, -1 do
-                        table.insert(tracker, self.tiles[y][x2].variety)
+                    for x2 = x - 1, x - matchNum, -1 do                        
+                        -- checks if there are shiny blocks within the matches
+                        -- if there are count the whole row as a match
+                        -- else only count the color matching tiles
+                        if self.tiles[y][x2].shine then
+                            for x3 = 1, 8 do
+                                table.insert(tracker,self.tiles[y][x3].variety)
+                            end
+                        else
+                            table.insert(tracker, self.tiles[y][x2].variety)
+                        end
                     end
                    
                     table.insert(trackVariety, tracker)
@@ -428,7 +473,16 @@ function Board:calculateVarietyMatches()
             local tracker = {}
             -- go backwards from end of last row by matchNum
             for x = 8, 8 - matchNum + 1, -1 do
-                table.insert(tracker, self.tiles[y][x].variety)
+                -- checks if there are shiny blocks within 
+                -- if there are count the whole row as a ma
+                -- else only count the color matching tiles
+                if self.tiles[y][x].shine then
+                    for x2 = 1, 8 do
+                        table.insert(tracker,self.tiles[y][x2].variety)
+                    end
+                else
+                    table.insert(tracker, self.tiles[y][x].variety)
+                end
             end
             
             table.insert(trackVariety, tracker)
@@ -452,9 +506,18 @@ function Board:calculateVarietyMatches()
                     local tracker = {}
 
                     for y2 = y - 1, y - matchNum, -1 do
-                        table.insert(tracker, self.tiles[y2][x].variety)
+                        -- checks if there are shiny blocks within the matches
+                        -- if there are count the whole column as a match
+                        -- else only count the color matching tiles
+                        if self.tiles[y2][x].shine then
+                            for y3 = 1, 8 do
+                                table.insert(tracker,self.tiles[y3][x].variety)
+                            end
+                        else
+                            table.insert(tracker, self.tiles[y2][x].variety)
+                        end
                     end
-
+                    
                     table.insert(trackVariety, tracker)
 
                 end
@@ -474,7 +537,13 @@ function Board:calculateVarietyMatches()
 
             -- go backwards from end of last row by matchNum
             for y = 8, 8 - matchNum + 1, -1 do
-                table.insert(tracker, self.tiles[y][x].variety)
+                if self.tiles[y][x].shine then
+                    for y2 = 1, 8 do
+                        table.insert(tracker,self.tiles[y2][x].variety)
+                    end
+                else
+                    table.insert(tracker, self.tiles[y][x].variety)
+                end
             end
 
             table.insert(trackVariety, tracker)
@@ -787,4 +856,25 @@ function Board:checkIsEmpty()
     end
 
     return true
+end
+
+
+function Board:createShine()
+    -- creates shiny block at random times
+    self.chance = math.random(2) == 1 and true or false
+
+    if self.chance then
+        self.chance1 = math.random(2) == 1 and true or false
+
+        if self.chance1 then
+
+            self.chance2 = math.random(2) == 1 and true or false
+            if self.chance2 then
+                return math.random(2) == 1 and true or false 
+            end
+
+        end
+    end
+
+    return false
 end

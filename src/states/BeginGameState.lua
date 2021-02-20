@@ -24,7 +24,17 @@ function BeginGameState:init()
     -- start our level # label off-screen
     self.levelLabelY = -64
 
-
+    Timer.every(2, function()
+        for k, tileY in pairs(self.board.tiles) do
+            for j, tileX in pairs(self.board.tiles[k])do
+                Timer.tween(1, {[tileX] = { shineOpacity = 255, scaleX = 0.125, scaleY = 0.125}}):finish(
+                    function()
+                        Timer.tween(1, {[tileX] = { shineOpacity = 1, scaleX = 0.12, scaleY = 0.12}})
+                    end
+                )
+            end
+        end
+    end)
 end
 
 function BeginGameState:enter(def)
@@ -53,7 +63,7 @@ function BeginGameState:enter(def)
     end
 
     -- additional parameters for Board class 
-    self.board = Board(VIRTUAL_WIDTH - 272, 16, self.color, self.pattern)
+    self.board = Board(VIRTUAL_WIDTH - 272, 16, self.color, self.pattern, math.random(2))
     --
     -- animate our white screen fade-in, then animate a drop-down with
     -- the level text
